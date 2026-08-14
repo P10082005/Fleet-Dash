@@ -8,7 +8,7 @@ const { htmlToPdfBuffer } = require('../services/pdfExporter');
 
 const router = express.Router();
 
-// GET /documents/:id/export/html
+// GET /api/documents/:id/export/html
 router.get('/documents/:id/export/html', async (req, res) => {
   try {
     const { id } = req.params;
@@ -37,7 +37,7 @@ router.get('/documents/:id/export/html', async (req, res) => {
   }
 });
 
-// GET /documents/:id/export/pdf
+// GET /api/documents/:id/export/pdf
 router.get('/documents/:id/export/pdf', async (req, res) => {
   try {
     const { id } = req.params;
@@ -57,12 +57,15 @@ router.get('/documents/:id/export/pdf', async (req, res) => {
     // 2. Sanitize HTML
     const safeHtml = sanitizeHTML(rawHtml);
 
-    // 3. Convert sanitized HTML to PDF
+    // 3. HTML → PDF Buffer
     const pdfBuffer = await htmlToPdfBuffer(safeHtml);
 
     // 4. Send PDF
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${doc.title || 'document'}.pdf"`);
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="${doc.title || 'document'}.pdf"`
+    );
     return res.status(200).send(pdfBuffer);
   } catch (err) {
     console.error('[EXPORT PDF ERROR]', err);

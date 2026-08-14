@@ -2,23 +2,21 @@
 
 const puppeteer = require('puppeteer');
 
-// Convert sanitized HTML string to a PDF Buffer [web:16][web:19]
+// Convert sanitized HTML to PDF Buffer using Puppeteer [web:19][web:39][web:40]
 async function htmlToPdfBuffer(html) {
-  // Launch headless Chrome
   const browser = await puppeteer.launch({
-    // In production you might add args like:
+    headless: true,
+    // In some environments you may need:
     // args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
 
   try {
     const page = await browser.newPage();
 
-    // Set sanitized HTML as page content
     await page.setContent(html, {
-      waitUntil: 'domcontentloaded',
+      waitUntil: 'networkidle0',
     });
 
-    // Generate PDF buffer
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,

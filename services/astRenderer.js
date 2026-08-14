@@ -1,6 +1,6 @@
 // services/astRenderer.js
 
-// Helper: escape plain text so <, &, " don't break HTML
+// Escape plain text so it can't break HTML or inject tags
 function escapeText(text) {
   return String(text)
     .replace(/&/g, '&amp;')
@@ -10,11 +10,9 @@ function escapeText(text) {
     .replace(/'/g, '&#39;');
 }
 
-// Core: render a single AST node to HTML
+// Render a single AST node recursively
 function renderNode(node) {
-  if (!node || !node.type) {
-    return '';
-  }
+  if (!node || !node.type) return '';
 
   const childrenHtml = Array.isArray(node.children)
     ? node.children.map(renderNode).join('')
@@ -22,7 +20,6 @@ function renderNode(node) {
 
   switch (node.type) {
     case 'document':
-      // root node: wrap in a minimal HTML shell
       return `
         <html>
           <head>
@@ -36,7 +33,7 @@ function renderNode(node) {
       `;
 
     case 'heading': {
-      const level = node.level || 1; // 1-6
+      const level = node.level || 1;
       const safeLevel = Math.min(Math.max(level, 1), 6);
       return `<h${safeLevel}>${escapeText(node.text || '')}</h${safeLevel}>`;
     }
@@ -45,7 +42,9 @@ function renderNode(node) {
       return `<p>${escapeText(node.text || '')}</p>`;
 
     case 'code_block': {
-      const langClass = node.language ? ` class="language-${escapeText(node.language)}"` : '';
+      const langClass = node.language
+        ? ` class="language-${escapeText(node.language)}"`
+        : '';
       return `<pre><code${langClass}>${escapeText(node.code || '')}</code></pre>`;
     }
 
@@ -65,27 +64,28 @@ function renderNode(node) {
 
     case 'link': {
       const href = escapeText(node.href || '#');
-      return `<a href="${href}">${childrenHtml || escapeText(node.text || '')}</a>`;
+      const label = childrenHtml || escapeText(node.text || '');
+      return `<a href="${href}">${label}</a>`;
     }
 
     case 'text':
-      // a pure text node (inline)
       return escapeText(node.value || '');
 
-    // fallback: ignore unknown node types instead of rendering unsafe HTML
     default:
+      // Ignore unknown node types, but keep children
       return childrenHtml;
   }
 }
 
-// Public API: render whole document AST
+// Public API: render entire document AST
 function renderDocument(astRoot) {
-  // If root is not explicitly a "document" node, wrap it
   if (!astRoot || astRoot.type !== 'document') {
     astRoot = {
       type: 'document',
       title: astRoot?.title || 'SyncDoc Document',
-      children: Array.isArray(astRoot?.children) ? astRoot.children : [astRoot],
+      children: Array.isArray(astRoot?.children)
+        ? astRoot.children
+        : astRoot ? [astRoot] : [],
     };
   }
 
