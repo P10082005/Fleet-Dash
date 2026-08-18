@@ -1,6 +1,3 @@
-// services/astRenderer.js
-
-// Escape plain text so it can't break HTML or inject tags
 function escapeText(text) {
   return String(text)
     .replace(/&/g, '&amp;')
@@ -10,7 +7,6 @@ function escapeText(text) {
     .replace(/'/g, '&#39;');
 }
 
-// Render a single AST node recursively
 function renderNode(node) {
   if (!node || !node.type) return '';
 
@@ -26,26 +22,21 @@ function renderNode(node) {
             <meta charset="utf-8">
             <title>${escapeText(node.title || 'SyncDoc Document')}</title>
           </head>
-          <body>
-            ${childrenHtml}
-          </body>
+          <body>${childrenHtml}</body>
         </html>
       `;
 
     case 'heading': {
-      const level = node.level || 1;
-      const safeLevel = Math.min(Math.max(level, 1), 6);
-      return `<h${safeLevel}>${escapeText(node.text || '')}</h${safeLevel}>`;
+      const level = Math.min(Math.max(node.level || 1, 1), 6);
+      return `<h${level}>${escapeText(node.text || '')}</h${level}>`;
     }
 
     case 'paragraph':
       return `<p>${escapeText(node.text || '')}</p>`;
 
     case 'code_block': {
-      const langClass = node.language
-        ? ` class="language-${escapeText(node.language)}"`
-        : '';
-      return `<pre><code${langClass}>${escapeText(node.code || '')}</code></pre>`;
+      const lang = node.language ? ` class="language-${escapeText(node.language)}"` : '';
+      return `<pre><code${lang}>${escapeText(node.code || '')}</code></pre>`;
     }
 
     case 'list': {
@@ -56,42 +47,23 @@ function renderNode(node) {
     case 'list_item':
       return `<li>${childrenHtml}</li>`;
 
-    case 'bold':
-      return `<strong>${childrenHtml}</strong>`;
-
-    case 'italic':
-      return `<em>${childrenHtml}</em>`;
-
-    case 'link': {
-      const href = escapeText(node.href || '#');
-      const label = childrenHtml || escapeText(node.text || '');
-      return `<a href="${href}">${label}</a>`;
-    }
-
     case 'text':
       return escapeText(node.value || '');
 
     default:
-      // Ignore unknown node types, but keep children
       return childrenHtml;
   }
 }
 
-// Public API: render entire document AST
 function renderDocument(astRoot) {
   if (!astRoot || astRoot.type !== 'document') {
     astRoot = {
       type: 'document',
       title: astRoot?.title || 'SyncDoc Document',
-      children: Array.isArray(astRoot?.children)
-        ? astRoot.children
-        : astRoot ? [astRoot] : [],
+      children: Array.isArray(astRoot?.children) ? astRoot.children : [],
     };
   }
-
   return renderNode(astRoot);
 }
 
-module.exports = {
-  renderDocument,
-};
+module.exports = { renderDocument };
