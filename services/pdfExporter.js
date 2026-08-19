@@ -1,9 +1,7 @@
 const puppeteer = require('puppeteer');
 
 async function htmlToPdfBuffer(html) {
-  const browser = await puppeteer.launch({
-    headless: true,
-  });
+  const browser = await puppeteer.launch({ headless: true });
 
   try {
     const page = await browser.newPage();
