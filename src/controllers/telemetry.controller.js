@@ -1,10 +1,13 @@
 const { parseTelemetry } = require("../services/ingestion.service");
 const { saveTelemetryPoint } = require("../services/bucket.service");
+const { publishTelemetry } = require("../services/pubsub.service");
 
 async function ingestTelemetry(req, res) {
   try {
     const telemetry = await parseTelemetry(req.body);
     const bucket = await saveTelemetryPoint(telemetry);
+
+    await publishTelemetry(telemetry);
 
     return res.status(202).json({
       success: true,
