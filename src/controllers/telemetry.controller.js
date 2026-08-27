@@ -1,9 +1,16 @@
-const { parseTelemetry } = require("../services/ingestion.service");
+const { parseTelemetry, pool } = require("../services/ingestion.service");
 const { saveTelemetryPoint } = require("../services/bucket.service");
 const { publishTelemetry } = require("../services/pubsub.service");
 
 async function ingestTelemetry(req, res) {
   try {
+    if (pool.queue.length > 1000) {
+      return res.status(429).json({
+        success: false,
+        error: "Server busy, try again later"
+      });
+    }
+
     const telemetry = await parseTelemetry(req.body);
     const bucket = await saveTelemetryPoint(telemetry);
 

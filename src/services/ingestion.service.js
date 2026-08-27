@@ -1,35 +1,14 @@
-const path = require("node:path");
-const { Worker } = require("node:worker_threads");
+const os = require("node:os");
+const WorkerPool = require("./worker-pool.service");
 
-const workerPath = path.join(__dirname, "../workers/telemetry.worker.js");
+const poolSize = Math.max(2, Math.min(os.cpus().length - 1, 8));
+const pool = new WorkerPool(poolSize);
 
 function parseTelemetry(payload) {
-  return new Promise((resolve, reject) => {
-    const worker = new Worker(workerPath);
-
-    const cleanup = async () => {
-      await worker.terminate();
-    };
-
-    worker.once("message", async (result) => {
-      await cleanup();
-
-      if (!result.success) {
-        return reject(new Error(result.error));
-      }
-
-      resolve(result.telemetry);
-    });
-
-    worker.once("error", async (error) => {
-      await cleanup();
-      reject(error);
-    });
-
-    worker.postMessage(payload);
-  });
+  return pool.execute(payload);
 }
 
 module.exports = {
-  parseTelemetry
+  parseTelemetry,
+  pool
 };
