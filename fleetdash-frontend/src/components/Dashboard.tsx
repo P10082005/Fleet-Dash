@@ -16,7 +16,7 @@ function Dashboard() {
       {/* Main Content */}
       <main className="main-content">
         <h1>Fleet Dashboard</h1>
-        <p> Manage yuor fleet in one place.</p>
+        <p> Real-time fleet monitoring</p>
 
         <div className="cards">
           <div className="card">
