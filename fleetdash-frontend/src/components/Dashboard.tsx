@@ -1,3 +1,4 @@
+import MapView from "./MapView";
 import "../App.css";
 function Dashboard() {
   return (
@@ -30,6 +31,10 @@ function Dashboard() {
           <div className="card">
             <h3>Maintenance</h3>
             <p>4</p>
+          </div>
+          <div className="map-section">
+            <h2>Live Fleet Map</h2>
+            <MapView />
           </div>
         </div>
       </main>
