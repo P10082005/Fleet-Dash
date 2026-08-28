@@ -1,5 +1,5 @@
 const http = require("http");
-const app = require("./app");
+const app = require("../app");
 const connectDatabase = require("./config/db");
 const { connectRedis } = require("./services/pubsub.service");
 const { pool } = require("./services/ingestion.service");

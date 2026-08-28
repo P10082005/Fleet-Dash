@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/P10082005/Fleet-Dash#readme",
   "dependencies": {
+    "@socket.io/redis-adapter": "^8.3.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
