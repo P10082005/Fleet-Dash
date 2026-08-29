@@ -1,12 +1,10 @@
 const express = require("express");
+const {
+  ingestTelemetry
+} = require("../controllers/telemetry.controller");
 
 const router = express.Router();
 
-router.get("/test", (req, res) => {
-  res.json({
-    success: true,
-    message: "Telemetry route is working"
-  });
-});
+router.post("/", ingestTelemetry);
 
 module.exports = router;

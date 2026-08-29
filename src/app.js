@@ -3,7 +3,6 @@ const cors = require("cors");
 const helmet = require("helmet");
 
 const telemetryRoutes = require("./routes/telemetry.routes");
-
 const app = express();
 
 app.use(helmet());

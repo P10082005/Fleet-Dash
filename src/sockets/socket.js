@@ -1,32 +1,36 @@
-const http = require("http");
-const app = require("../app");
-const connectDatabase = require("./config/db");
-const { connectRedis } = require("./services/pubsub.service");
-const { pool } = require("./services/ingestion.service");
-const { port } = require("./config/env");
-const setupSocket = require("./sockets/socket");
+const { Server } = require("socket.io");
+const {
+  subscribeTelemetry,
+  attachRedisAdapter
+} = require("../services/pubsub.service");
 
-async function startServer() {
-  await connectDatabase();
-  await connectRedis();
-
-  const server = http.createServer(app);
-  setupSocket(server);
-
-  server.listen(port, () => {
-    console.log(`FleetDash running on port ${port}`);
+function setupSocket(httpServer) {
+  const io = new Server(httpServer, {
+    cors: {
+      origin: "*"
+    },
+    transports: ["websocket", "polling"]
   });
 
-  const shutdown = async () => {
-    await pool.close();
-    server.close(() => process.exit(0));
-  };
+  attachRedisAdapter(io);
 
-  process.on("SIGINT", shutdown);
-  process.on("SIGTERM", shutdown);
+  io.on("connection", (socket) => {
+    console.log(`Client connected: ${socket.id}`);
+
+    socket.on("join-fleet", (fleetId) => {
+      socket.join(`fleet:${fleetId}`);
+    });
+
+    socket.on("disconnect", () => {
+      console.log(`Client disconnected: ${socket.id}`);
+    });
+  });
+
+  subscribeTelemetry((telemetry) => {
+    io.emit("telemetry:update", telemetry);
+  });
+
+  return io;
 }
 
-startServer().catch((error) => {
-  console.error("Startup failed:", error);
-  process.exit(1);
-});
+module.exports = setupSocket;
