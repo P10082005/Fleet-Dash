@@ -67,7 +67,7 @@ src/
 ## Installation
 
 ```bash
-git clone <your-repo-url>
+git clone <repo-url>
 cd Fleet-Dash
 npm install
 ```
