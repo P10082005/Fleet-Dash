@@ -1,6 +1,15 @@
+import { useEffect } from "react";
+import { connectSocket, disconnectSocket } from "../services/socket";
 import MapView from "./MapView";
 import "../App.css";
 function Dashboard() {
+  useEffect(() => {
+    connectSocket();
+    return () => {
+      disconnectSocket();
+    };
+  }, []);
+
   return (
     <div className="dashboard">
       {/* Sidebar */}
