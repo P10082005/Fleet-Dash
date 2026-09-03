@@ -1,8 +1,11 @@
+import { useState } from "react";
+import type { Vehicle } from "../types/vehicle";
 import { useEffect } from "react";
 import { connectSocket, disconnectSocket } from "../services/socket";
 import MapView from "./MapView";
 import "../App.css";
 function Dashboard() {
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   useEffect(() => {
     connectSocket();
     return () => {
@@ -31,11 +34,13 @@ function Dashboard() {
         <div className="cards">
           <div className="card">
              <h3>total Vehicals</h3>
-             <p>25</p>
+             <p>{vehicles.length}</p>
           </div>
           <div className="card">
              <h3>Active Vehicals</h3>
-             <p>18</p>
+             <p>{vehicles.filter((v) => v.status === "moving").length}</p>
+             <p>{vehicles.filter((v) => v.status === "stopped").length}</p>
+             <p>{vehicles.filter((v) => v.status === "alert").length}</p>
           </div>
           <div className="card">
             <h3>Maintenance</h3>
@@ -43,7 +48,7 @@ function Dashboard() {
           </div>
           <div className="map-section">
             <h2>Live Fleet Map</h2>
-            <MapView />
+            <MapView vehicles={vehicles} />
           </div>
         </div>
       </main>
