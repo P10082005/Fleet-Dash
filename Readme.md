@@ -1,16 +1,16 @@
 # FleetDash
 
-FleetDash is a high-throughput, event-driven fleet telemetry dashboard built with Node.js, Express, MongoDB, Redis, and Socket.IO. It is designed to ingest thousands of vehicle telemetry events, store them efficiently in MongoDB bucket-style documents, and broadcast real-time updates to connected clients.
+FleetDash is a high-throughput fleet telemetry backend built with Node.js, Express, MongoDB, Redis, Socket.IO, and worker threads. It receives vehicle telemetry, processes it efficiently, stores it in MongoDB using hourly buckets, and broadcasts live updates to connected clients.
 
 ## Features
 
-- High-throughput telemetry ingestion.
-- CPU-heavy parsing handled with Node.js worker threads.
-- Hourly bucket storage in MongoDB for efficient querying.
-- Redis Pub/Sub for live event broadcasting.
-- Socket.IO for real-time dashboard updates.
-- Validation for telemetry payloads.
-- Ready for scaling and load testing.
+- Telemetry ingestion through REST API.
+- CPU-heavy parsing handled with worker threads.
+- Hourly bucket storage in MongoDB.
+- Redis Pub/Sub for real-time broadcasting.
+- Socket.IO support for live dashboard updates.
+- Backpressure handling for burst traffic.
+- Health check endpoint for quick verification.
 
 ## Tech Stack
 
@@ -24,13 +24,15 @@ FleetDash is a high-throughput, event-driven fleet telemetry dashboard built wit
 
 ## How It Works
 
-1. A client sends telemetry data to the `POST /api/telemetry` endpoint.
-2. The request payload is passed to a worker thread for validation and normalization.
-3. The cleaned telemetry data is stored in MongoDB using an hourly bucket pattern.
-4. The same telemetry event is published to Redis Pub/Sub.
-5. Socket.IO subscribers receive the event instantly and update the live dashboard.
+1. A vehicle sends telemetry data to the `POST /api/telemetry` endpoint.
+2. The payload is processed in a worker thread so the main server stays responsive.
+3. The cleaned telemetry data is stored in MongoDB in an hourly bucket document.
+4. MongoDB `$push` appends the point to the bucket’s `points` array, and `$inc` increases the `pointCount` atomically [web:151][web:149].
+5. The saved telemetry is published to Redis Pub/Sub for live broadcasting.
+6. Socket.IO clients receive the update instantly through the `telemetry:update` event.
+7. The dashboard can display the latest vehicle data in real time.
 
-Worker threads are useful for CPU-intensive JavaScript operations, while Redis Pub/Sub is meant for broadcasting real-time events to many consumers [web:5][web:52]. MongoDB update operators such as `$push` and `$inc` are used to append telemetry points to bucket documents and increment the stored point count [web:42][web:150].
+Worker threads are useful for CPU-intensive JavaScript operations, while Redis Pub/Sub is designed for broadcasting real-time events to many consumers [web:5][web:52].
 
 ## Project Structure
 
@@ -60,19 +62,19 @@ src/
 
 ## Prerequisites
 
-- Node.js 18+ or 20+
-- MongoDB running locally or in Docker
-- Redis running locally or in Docker
+- Node.js 18+ or newer.
+- MongoDB running locally or in Docker.
+- Redis running locally or in Docker.
 
 ## Installation
 
 ```bash
-git clone <repo-url>
+git clone <your-repo-url>
 cd Fleet-Dash
 npm install
 ```
 
-If you are using the Redis adapter package, install it with quotes in PowerShell:
+If you are using the Socket.IO Redis adapter package in PowerShell, install it like this:
 
 ```powershell
 npm install "@socket.io/redis-adapter"
@@ -80,7 +82,7 @@ npm install "@socket.io/redis-adapter"
 
 ## Environment Variables
 
-Create a `.env` file:
+Create a `.env` file in the project root:
 
 ```env
 PORT=5000
@@ -96,7 +98,7 @@ Start MongoDB and Redis first, then run:
 npm run dev
 ```
 
-The server should start on:
+The API will start at:
 
 ```text
 http://localhost:5000
@@ -110,13 +112,13 @@ http://localhost:5000
 GET /health
 ```
 
-Response:
+Example response:
 
 ```json
 {
   "success": true,
-  "service": "fleetapi",
-  "timestamp": "2026-08-30T00:00:00.000Z"
+  "service": "fleetdash-api",
+  "timestamp": "2026-09-03T00:00:00.000Z"
 }
 ```
 
@@ -126,7 +128,7 @@ Response:
 POST /api/telemetry
 ```
 
-Request body:
+Example request body:
 
 ```json
 {
@@ -135,11 +137,11 @@ Request body:
   "longitude": 77.5946,
   "speed": 45,
   "heading": 90,
-  "timestamp": "2026-08-30T00:00:00.000Z"
+  "timestamp": "2026-09-03T00:00:00.000Z"
 }
 ```
 
-Success response:
+Example success response:
 
 ```json
 {
@@ -147,8 +149,8 @@ Success response:
   "message": "Telemetry stored successfully",
   "data": {
     "vehicleId": "TRUCK-001",
-    "bucketStart": "2026-08-30T00:00:00.000Z",
-    "bucketEnd": "2026-08-30T01:00:00.000Z",
+    "bucketStart": "2026-09-03T00:00:00.000Z",
+    "bucketEnd": "2026-09-03T01:00:00.000Z",
     "pointCount": 1
   }
 }
@@ -156,7 +158,7 @@ Success response:
 
 ## MongoDB Storage Design
 
-Telemetry is stored in hourly buckets by vehicle ID. Each document contains:
+Telemetry is grouped into hourly bucket documents by `vehicleId`. Each bucket contains:
 
 - `vehicleId`
 - `bucketStart`
@@ -164,19 +166,19 @@ Telemetry is stored in hourly buckets by vehicle ID. Each document contains:
 - `points[]`
 - `pointCount`
 
-This approach reduces document sprawl and improves query efficiency for time-based telemetry data. MongoDB’s `$push` operator is used to append telemetry points to the array, and `$inc` updates the point count atomically [web:42][web:150].
+This design keeps related telemetry together and makes time-based queries efficient. MongoDB update operators such as `$push` and `$inc` are used to append new points and update the counter in a single atomic document update [web:151][web:149][web:42].
 
 ## Real-Time Flow
 
-- Telemetry is published to Redis Pub/Sub after being stored.
-- Socket.IO listens to the Redis channel.
-- Connected clients receive `telemetry:update` events instantly.
+- After telemetry is saved, it is published to Redis Pub/Sub.
+- Socket.IO subscribes to the Redis channel.
+- Connected clients receive `telemetry:update` events immediately.
 
-Redis Pub/Sub is ideal for live broadcast-style messaging, but it is not durable storage, so offline subscribers miss messages [web:52]. That is acceptable for live dashboard updates.
+Redis Pub/Sub is ideal for live broadcast-style updates where many consumers need the same event at once [web:52].
 
 ## Testing
 
-You can test the API with PowerShell:
+You can test the ingestion endpoint with PowerShell:
 
 ```powershell
 $body = @{
@@ -195,18 +197,20 @@ Invoke-RestMethod `
   -Body $body
 ```
 
+Check MongoDB data in `mongosh`:
+
+```javascript
+use fleetdash
+db.telemetrybuckets.find().pretty()
+```
+
 ## Troubleshooting
 
-- If `npm run dev` fails, check that MongoDB is running.
+- If `npm run dev` fails, confirm MongoDB is running.
 - If Redis connection fails, start Redis on port `6379`.
-- If a route returns `Cannot POST`, confirm the router is mounted correctly.
-- If a module is missing, verify the file path in `require()`.
+- If the API returns `Cannot POST`, verify the route is mounted correctly.
+- If a module is missing, confirm the file path in `require()` is correct.
 
 ## License
 
-This project is for internship and learning purposes.
-
-
-## By
-
-Abhilash N
+This project is for internship and academic use.
