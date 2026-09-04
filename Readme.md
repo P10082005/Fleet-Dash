@@ -2,6 +2,17 @@
 
 FleetDash is a high-throughput fleet telemetry backend built with Node.js, Express, MongoDB, Redis, Socket.IO, and worker threads. It receives vehicle telemetry, processes it efficiently, stores it in MongoDB using hourly buckets, and broadcasts live updates to connected clients.
 
+
+## Problem Statement
+
+Modern fleet monitoring systems generate telemetry at a very high frequency, often from multiple vehicles at the same time. Each vehicle continuously sends data such as latitude, longitude, speed, heading, and timestamp updates. In a conventional backend design, processing every record individually can create unnecessary database load, increase response latency, and block the main event loop during bursts of incoming traffic.
+
+## Solution Overview
+
+FleetDash addresses this problem through an event-driven and performance-oriented backend architecture. The telemetry parsing logic is executed in Node.js worker threads, which are well suited for CPU-intensive JavaScript operations and help keep the main server responsive [web:5][web:8][web:164]. After processing, the telemetry is stored in MongoDB using an hourly bucket structure, where `$push` is used to append new points to the `points` array and `$inc` is used to update the total point count atomically [web:151][web:42][web:165]. This reduces document fragmentation and makes time-based retrieval more efficient.
+
+For real-time delivery, FleetDash uses Redis Pub/Sub to broadcast telemetry updates to connected clients without tightly coupling the ingestion and notification layers [web:52]. The final live update is delivered through Socket.IO, enabling the dashboard to receive vehicle data instantly as soon as it is processed and stored. Together, these components create a scalable flow from telemetry ingestion to database storage and real-time UI updates.
+
 ## Features
 
 - Telemetry ingestion through REST API.
@@ -69,7 +80,7 @@ src/
 ## Installation
 
 ```bash
-git clone <your-repo-url>
+git clone <our-repo-url>
 cd Fleet-Dash
 npm install
 ```
