@@ -82,3 +82,34 @@ margin-bottom: 15px;
   background: #f4f6f8;
   border-radius: 6px;
 }
+@media (max-width: 768px) {
+  .dashboard {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: auto;
+  }
+
+  .sidebar nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .main-content {
+    padding: 20px;
+  }
+
+  .cards {
+    flex-wrap: wrap;
+  }
+
+  .card {
+    width: 100%;
+  }
+
+  .vehicle-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
