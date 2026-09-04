@@ -49,6 +49,23 @@ function Dashboard() {
           <div className="map-section">
             <h2>Live Fleet Map</h2>
             <MapView vehicles={vehicles} />
+            <div className="vehicle-list">
+                 <h2>Vehicle Details</h2>
+
+                 {vehicles.length === 0 ? (
+                 <p>No vehicle data available yet.</p>
+                 ) : (
+               <div className="vehicle-table">
+                  {vehicles.map((vehicle) => (
+                  <div className="vehicle-row" key={vehicle.vehicleId}>
+                    <span>{vehicle.vehicleId}</span>
+                    <span>{vehicle.speed} km/h</span>
+                    <span>{vehicle.status}</span>
+                  </div>
+                   ))}
+               </div>
+                )}
+             </div>
           </div>
         </div>
       </main>

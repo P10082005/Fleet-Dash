@@ -58,3 +58,27 @@ margin-bottom: 15px;
   color: #555;
   font-size: 18px;
 }
+.vehicle-list {
+  margin-top: 30px;
+  background: white;
+  padding: 25px;
+  border-radius: 10px;
+}
+
+.vehicle-list h2 {
+  margin-bottom: 20px;
+}
+
+.vehicle-table {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vehicle-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  padding: 12px;
+  background: #f4f6f8;
+  border-radius: 6px;
+}
