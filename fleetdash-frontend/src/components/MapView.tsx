@@ -1,7 +1,12 @@
-import { MapContainer, TileLayer } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import type { Vehicle } from "../types/vehicle";
 
-function MapView() {
+interface MapViewProps {
+  vehicles: Vehicle[];
+}
+
+function MapView({ vehicles }: MapViewProps) {
   return (
     <div className="map-container">
       <MapContainer
@@ -13,6 +18,15 @@ function MapView() {
           attribution='&copy; OpenStreetMap contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        {vehicles.map((vehicle) => (
+          <Marker 
+        key={vehicle.vehicleId}
+        position={[vehicle.latitude, vehicle.longitude]}>
+          <popup>
+            <strong>Vehicle:</strong> {vehicle.vehiclesId}<br />
+            <strong>Speed:</strong> {vehicle.speed} km/h <br />
+            <strong>Status:</strong> {vehicle.status}<br />
+          </popup>
       </MapContainer>
     </div>
   );
