@@ -9,26 +9,52 @@ function Dashboard() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isConnected, setIsConnected] = useState(false);
 
-  useEffect(() => {
-    connectSocket();
+ useEffect(() => {
+  connectSocket();
 
-    const handleConnect = () => {
-      setIsConnected(true);
-    };
+  const handleConnect = () => {
+    setIsConnected(true);
+  };
 
-    const handleDisconnect = () => {
-      setIsConnected(false);
-    };
+  const handleDisconnect = () => {
+    setIsConnected(false);
+  };
 
-    socket.on("connect", handleConnect);
-    socket.on("disconnect", handleDisconnect);
+  const handleTelemetryUpdate = (telemetry: any) => {
+  const vehicle: Vehicle = {
+    vehicleId: telemetry.vehicleId,
+    latitude: telemetry.latitude,
+    longitude: telemetry.longitude,
+    speed: telemetry.speed,
+    status: telemetry.speed > 0 ? "moving" : "stopped",
+  };
 
-    return () => {
-      socket.off("connect", handleConnect);
-      socket.off("disconnect", handleDisconnect);
-      disconnectSocket();
-    };
-  }, []);
+  setVehicles((currentVehicles) => {
+    const existingVehicle = currentVehicles.find(
+      (v) => v.vehicleId === vehicle.vehicleId
+    );
+
+    if (existingVehicle) {
+      return currentVehicles.map((v) =>
+        v.vehicleId === vehicle.vehicleId ? vehicle : v
+      );
+    }
+
+    return [...currentVehicles, vehicle];
+  });
+};
+
+  socket.on("connect", handleConnect);
+  socket.on("disconnect", handleDisconnect);
+  socket.on("telemetry:update", handleTelemetryUpdate);
+
+  return () => {
+    socket.off("connect", handleConnect);
+    socket.off("disconnect", handleDisconnect);
+    socket.off("telemetry:update", handleTelemetryUpdate);
+    disconnectSocket();
+  };
+}, []);
 
   return (
     <div className="dashboard">
