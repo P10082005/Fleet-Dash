@@ -40,19 +40,11 @@ class WorkerPool {
     worker.on("error", (error) => {
       item.busy = false;
 
-      if (item.reject) {
-        item.reject(error);
-      }
+      if (item.reject) item.reject(error);
 
       item.resolve = null;
       item.reject = null;
       this.processQueue();
-    });
-
-    worker.on("exit", (code) => {
-      if (code !== 0) {
-        console.error(`Worker exited with code ${code}`);
-      }
     });
 
     this.workers.push(item);

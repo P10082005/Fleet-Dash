@@ -1,7 +1,8 @@
 const http = require("http");
 const app = require("./app");
 const connectDatabase = require("./config/db");
-const { connectRedis } = require("./services/pubsub.service");
+const { connectRedis, closeRedis } = require("./services/pubsub.service");
+const { pool } = require("./services/ingestion.service");
 const { port } = require("./config/env");
 const setupSocket = require("./sockets/socket");
 
@@ -15,6 +16,19 @@ async function startServer() {
   server.listen(port, () => {
     console.log(`FleetDash running on port ${port}`);
   });
+
+  const shutdown = async () => {
+    console.log("Shutting down server...");
+    await closeRedis();
+    await pool.close();
+    server.close(() => {
+      console.log("Server closed.");
+      process.exit(0);
+    });
+  };
+
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
 }
 
 startServer().catch((error) => {
