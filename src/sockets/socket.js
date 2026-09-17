@@ -27,9 +27,9 @@ function setupSocket(httpServer) {
   });
 
   subscribeTelemetry((telemetry) => {
-    io.emit("telemetry:update", telemetry);
-  });
-
+  console.log("Broadcasting telemetry:", telemetry);
+  io.emit("telemetry:update", telemetry);
+});
   return io;
 }
 

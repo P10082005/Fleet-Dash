@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+  <title>FleetDash | Live Fleet Monitoring</title>
+
+  <style>
+    :root {
+      --bg: #07111f;
+      --surface: #0d1b2f;
+      --surface-light: #12243d;
+      --border: #223956;
+      --text: #e7eef8;
+      --muted: #96a8c0;
+      --primary: #4f8cff;
+      --primary-dark: #2f6fdf;
+      --success: #22c55e;
+      --success-bg: rgba(34, 197, 94, 0.14);
+      --danger: #f87171;
+      --danger-bg: rgba(248, 113, 113, 0.16);
+      --warning: #fbbf24;
+      --shadow: 0 18px 45px rgba(0, 0, 0, 0.24);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(79, 140, 255, 0.16), transparent 35%),
+        radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.08), transparent 30%),
+        var(--bg);
+      font-family:
+        Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .app-shell {
+      width: min(1420px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 40px;
+    }
+
+    .topbar {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+
+    .brand {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .brand-logo {
+      display: grid;
+      width: 48px;
+      height: 48px;
+      place-items: center;
+      border: 1px solid rgba(79, 140, 255, 0.65);
+      border-radius: 14px;
+      color: white;
+      background: linear-gradient(145deg, var(--primary), #7d55ff);
+      box-shadow: 0 10px 25px rgba(79, 140, 255, 0.28);
+      font-size: 23px;
+      font-weight: 800;
+    }
+
+    .brand h1 {
+      margin: 0;
+      color: white;
+      font-size: clamp(1.55rem, 3vw, 2rem);
+      letter-spacing: -0.04em;
+    }
+
+    .brand p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .connection-card {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 11px 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--muted);
+      background: rgba(13, 27, 47, 0.82);
+      box-shadow: var(--shadow);
+      font-size: 0.9rem;
+    }
+
+    .connection-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--danger);
+      box-shadow: 0 0 0 5px var(--danger-bg);
+    }
+
+    .connection-card.connected .connection-dot {
+      background: var(--success);
+      box-shadow: 0 0 0 5px var(--success-bg);
+    }
+
+    .connection-card.connecting .connection-dot {
+      background: var(--warning);
+      box-shadow: 0 0 0 5px rgba(251, 191, 36, 0.14);
+    }
+
+    .connection-card strong {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .hero {
+      display: flex;
+      gap: 22px;
+      align-items: end;
+      justify-content: space-between;
+      margin-bottom: 22px;
+    }
+
+    .hero h2 {
+      margin: 0;
+      font-size: clamp(1.3rem, 2vw, 1.7rem);
+      letter-spacing: -0.03em;
+    }
+
+    .hero p {
+      max-width: 760px;
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .last-updated {
+      color: var(--muted);
+      font-size: 0.88rem;
+      white-space: nowrap;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .stat-card {
+      min-height: 126px;
+      padding: 19px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: linear-gradient(145deg, rgba(18, 36, 61, 0.96), rgba(13, 27, 47, 0.96));
+      box-shadow: var(--shadow);
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 0.84rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .stat-value {
+      margin-top: 12px;
+      color: white;
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+    }
+
+    .stat-note {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.83rem;
+    }
+
+    .layout-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.65fr) minmax(320px, 0.75fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .panel {
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: rgba(13, 27, 47, 0.94);
+      box-shadow: var(--shadow);
+    }
+
+    .panel-header {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-title {
+      margin: 0;
+      color: white;
+      font-size: 1rem;
+      font-weight: 750;
+    }
+
+    .panel-subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .search-input {
+      width: min(260px, 100%);
+      padding: 9px 11px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      outline: none;
+      color: var(--text);
+      background: #091729;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.16);
+    }
+
+    .table-scroll {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+    }
+
+    th {
+      padding: 13px 16px;
+      color: #aac0db;
+      background: rgba(7, 17, 31, 0.54);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.045em;
+      text-align: left;
+      text-transform: uppercase;
+    }
+
+    td {
+      padding: 15px 16px;
+      border-top: 1px solid rgba(34, 57, 86, 0.72);
+      color: #d6e0ee;
+      font-size: 0.9rem;
+    }
+
+    tbody tr {
+      transition: background 0.18s ease;
+    }
+
+    tbody tr:hover {
+      background: rgba(79, 140, 255, 0.07);
+    }
+
+    .vehicle-id {
+      color: white;
+      font-weight: 750;
+    }
+
+    .speed-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 9px;
+      border-radius: 999px;
+      color: #dbeafe;
+      background: rgba(79, 140, 255, 0.14);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .empty-state {
+      padding: 52px 20px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .empty-state .icon {
+      margin-bottom: 10px;
+      font-size: 2rem;
+    }
+
+    .feed {
+      max-height: 580px;
+      overflow-y: auto;
+    }
+
+    .feed-item {
+      display: grid;
+      grid-template-columns: 10px 1fr;
+      gap: 11px;
+      padding: 15px 18px;
+      border-bottom: 1px solid rgba(34, 57, 86, 0.72);
+    }
+
+    .feed-item:last-child {
+      border-bottom: 0;
+    }
+
+    .feed-dot {
+      width: 9px;
+      height: 9px;
+      margin-top: 5px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 0 4px var(--success-bg);
+    }
+
+    .feed-main {
+      display: flex;
+      gap: 8px;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+
+    .feed-main strong {
+      color: white;
+      font-size: 0.9rem;
+    }
+
+    .feed-main time {
+      color: var(--muted);
+      font-size: 0.76rem;
+      white-space: nowrap;
+    }
+
+    .feed-details {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 0.81rem;
+      line-height: 1.45;
+    }
+
+    .clear-button {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      color: #dce8f8;
+      background: transparent;
+      font-size: 0.8rem;
+      font-weight: 700;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .clear-button:hover {
+      border-color: rgba(248, 113, 113, 0.7);
+      color: #fecaca;
+      background: var(--danger-bg);
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      color: #8092aa;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+
+    @media (max-width: 1000px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .layout-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app-shell {
+        width: min(100% - 22px, 1420px);
+        padding-top: 18px;
+      }
+
+      .topbar,
+      .hero,
+      .panel-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .connection-card,
+      .search-input {
+        width: 100%;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        gap: 8px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-logo">F</div>
+        <div>
+          <h1>FleetDash</h1>
+          <p>Real-time vehicle telemetry monitoring</p>
+        </div>
+      </div>
+
+      <div id="connectionCard" class="connection-card connecting">
+        <span class="connection-dot"></span>
+        <span><strong id="connectionText">Connecting</strong> to live server</span>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div>
+        <h2>Live Fleet Overview</h2>
+        <p>
+          Monitor incoming telemetry events from connected vehicles. The dashboard
+          updates automatically when the backend broadcasts a
+          <code>telemetry:update</code> Socket.IO event.
+        </p>
+      </div>
+
+      <div class="last-updated">
+        Last event: <span id="lastUpdated">No events received</span>
+      </div>
+    </section>
+
+    <section class="stats-grid">
+      <article class="stat-card">
+        <div class="stat-label">Connection</div>
+        <div id="connectionMetric" class="stat-value">--</div>
+        <div id="connectionNote" class="stat-note">Waiting for server</div>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-label">Tracked Vehicles</div>
+        <div id="vehicleCount" class="stat-value">0</div>
+        <div class="stat-note">Unique vehicles received</div>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-label">Live Events</div>
+        <div id="eventCount" class="stat-value">0</div>
+        <div class="stat-note">Events received this session</div>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-label">Latest Speed</div>
+        <div id="latestSpeed" class="stat-value">--</div>
+        <div id="latestSpeedNote" class="stat-note">No telemetry received</div>
+      </article>
+    </section>
+
+    <section class="layout-grid">
+      <article class="panel">
+        <div class="panel-header">
+          <div>
+            <h3 class="panel-title">Latest Telemetry per Vehicle</h3>
+            <p class="panel-subtitle">
+              The most recent telemetry record received for each vehicle.
+            </p>
+          </div>
+
+          <input
+            id="vehicleSearch"
+            class="search-input"
+            type="search"
+            placeholder="Search vehicle ID..."
+            aria-label="Search vehicle ID"
+          />
+        </div>
+
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Vehicle ID</th>
+                <th>Latitude</th>
+                <th>Longitude</th>
+                <th>Speed</th>
+                <th>Heading</th>
+                <th>Received At</th>
+              </tr>
+            </thead>
+            <tbody id="telemetryTableBody"></tbody>
+          </table>
+        </div>
+
+        <div id="tableEmptyState" class="empty-state">
+          <div class="icon">📡</div>
+          <strong>No telemetry received yet</strong>
+          <div style="margin-top: 6px;">
+            Send a POST request to <code>/api/telemetry</code> to see live data here.
+          </div>
+        </div>
+      </article>
+
+      <aside class="panel">
+        <div class="panel-header">
+          <div>
+            <h3 class="panel-title">Live Event Feed</h3>
+            <p class="panel-subtitle">Most recent telemetry messages</p>
+          </div>
+
+          <button id="clearFeedButton" class="clear-button" type="button">
+            Clear
+          </button>
+        </div>
+
+        <div id="eventFeed" class="feed">
+          <div id="feedEmptyState" class="empty-state">
+            <div class="icon">⚡</div>
+            <strong>Waiting for live events</strong>
+            <div style="margin-top: 6px;">
+              Events will appear here automatically.
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <p class="footer-note">
+      FleetDash • Node.js • MongoDB • Redis Pub/Sub • Socket.IO
+    </p>
+  </main>
+
+  <!-- Local Socket.IO client served automatically by your Socket.IO server -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <script>
+    const socket = io({
+      transports: ["websocket", "polling"]
+    });
+
+    const latestTelemetryByVehicle = new Map();
+    const recentEvents = [];
+    const MAX_RECENT_EVENTS = 50;
+
+    let totalEvents = 0;
+    let currentSearch = "";
+
+    const connectionCard = document.getElementById("connectionCard");
+    const connectionText = document.getElementById("connectionText");
+    const connectionMetric = document.getElementById("connectionMetric");
+    const connectionNote = document.getElementById("connectionNote");
+
+    const vehicleCount = document.getElementById("vehicleCount");
+    const eventCount = document.getElementById("eventCount");
+    const latestSpeed = document.getElementById("latestSpeed");
+    const latestSpeedNote = document.getElementById("latestSpeedNote");
+    const lastUpdated = document.getElementById("lastUpdated");
+
+    const telemetryTableBody = document.getElementById("telemetryTableBody");
+    const tableEmptyState = document.getElementById("tableEmptyState");
+
+    const eventFeed = document.getElementById("eventFeed");
+    const feedEmptyState = document.getElementById("feedEmptyState");
+
+    const vehicleSearch = document.getElementById("vehicleSearch");
+    const clearFeedButton = document.getElementById("clearFeedButton");
+
+    function setConnectionStatus(status, message) {
+      connectionCard.classList.remove("connected", "connecting");
+
+      if (status === "connected") {
+        connectionCard.classList.add("connected");
+        connectionText.textContent = "Connected";
+        connectionMetric.textContent = "Live";
+        connectionNote.textContent = "Socket.IO connection active";
+        return;
+      }
+
+      if (status === "connecting") {
+        connectionCard.classList.add("connecting");
+        connectionText.textContent = "Connecting";
+        connectionMetric.textContent = "...";
+        connectionNote.textContent = message || "Connecting to live server";
+        return;
+      }
+
+      connectionText.textContent = "Disconnected";
+      connectionMetric.textContent = "Off";
+      connectionNote.textContent = message || "Waiting for reconnection";
+    }
+
+    function formatNumber(value, digits = 4) {
+      const number = Number(value);
+      return Number.isFinite(number) ? number.toFixed(digits) : "--";
+    }
+
+    function formatSpeed(value) {
+      const number = Number(value);
+      return Number.isFinite(number) ? `${number.toFixed(1)} km/h` : "--";
+    }
+
+    function formatHeading(value) {
+      const number = Number(value);
+      return Number.isFinite(number) ? `${number.toFixed(0)}°` : "--";
+    }
+
+    function formatDate(value) {
+      const date = new Date(value);
+
+      if (Number.isNaN(date.getTime())) {
+        return "Invalid time";
+      }
+
+      return date.toLocaleString();
+    }
+
+    function formatTime(value) {
+      const date = new Date(value);
+
+      if (Number.isNaN(date.getTime())) {
+        return "Just now";
+      }
+
+      return date.toLocaleTimeString();
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function renderStats(latestEvent) {
+      vehicleCount.textContent = latestTelemetryByVehicle.size;
+      eventCount.textContent = totalEvents;
+
+      if (latestEvent) {
+        latestSpeed.textContent = formatSpeed(latestEvent.speed);
+        latestSpeedNote.textContent = `${latestEvent.vehicleId || "Unknown vehicle"} • ${formatTime(latestEvent.timestamp)}`;
+        lastUpdated.textContent = formatDate(latestEvent.timestamp);
+      }
+    }
+
+    function getFilteredVehicles() {
+      const searchValue = currentSearch.trim().toLowerCase();
+
+      return Array.from(latestTelemetryByVehicle.values())
+        .filter((telemetry) => {
+          if (!searchValue) return true;
+
+          return String(telemetry.vehicleId || "")
+            .toLowerCase()
+            .includes(searchValue);
+        })
+        .sort((first, second) => {
+          const firstTime = new Date(first.timestamp).getTime() || 0;
+          const secondTime = new Date(second.timestamp).getTime() || 0;
+          return secondTime - firstTime;
+        });
+    }
+
+    function renderTable() {
+      const vehicles = getFilteredVehicles();
+
+      telemetryTableBody.innerHTML = "";
+
+      if (vehicles.length === 0) {
+        tableEmptyState.style.display = "block";
+
+        if (latestTelemetryByVehicle.size > 0 && currentSearch.trim()) {
+          tableEmptyState.innerHTML = `
+            <div class="icon">🔎</div>
+            <strong>No matching vehicles</strong>
+            <div style="margin-top: 6px;">
+              Try searching with another vehicle ID.
+            </div>
+          `;
+        } else {
+          tableEmptyState.innerHTML = `
+            <div class="icon">📡</div>
+            <strong>No telemetry received yet</strong>
+            <div style="margin-top: 6px;">
+              Send a POST request to <code>/api/telemetry</code> to see live data here.
+            </div>
+          `;
+        }
+
+        return;
+      }
+
+      tableEmptyState.style.display = "none";
+
+      vehicles.forEach((telemetry) => {
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+          <td class="vehicle-id">${escapeHtml(telemetry.vehicleId || "Unknown")}</td>
+          <td>${formatNumber(telemetry.latitude)}</td>
+          <td>${formatNumber(telemetry.longitude)}</td>
+          <td><span class="speed-pill">${formatSpeed(telemetry.speed)}</span></td>
+          <td>${formatHeading(telemetry.heading)}</td>
+          <td>${formatDate(telemetry.timestamp)}</td>
+        `;
+
+        telemetryTableBody.appendChild(row);
+      });
+    }
+
+    function renderFeed() {
+      const existingItems = eventFeed.querySelectorAll(".feed-item");
+      existingItems.forEach((item) => item.remove());
+
+      if (recentEvents.length === 0) {
+        feedEmptyState.style.display = "block";
+        return;
+      }
+
+      feedEmptyState.style.display = "none";
+
+      recentEvents.forEach((telemetry) => {
+        const eventItem = document.createElement("div");
+        eventItem.className = "feed-item";
+
+        eventItem.innerHTML = `
+          <div class="feed-dot"></div>
+          <div>
+            <div class="feed-main">
+              <strong>${escapeHtml(telemetry.vehicleId || "Unknown vehicle")}</strong>
+              <time>${formatTime(telemetry.timestamp)}</time>
+            </div>
+            <div class="feed-details">
+              ${formatSpeed(telemetry.speed)} •
+              ${formatNumber(telemetry.latitude)}, ${formatNumber(telemetry.longitude)} •
+              Heading ${formatHeading(telemetry.heading)}
+            </div>
+          </div>
+        `;
+
+        eventFeed.appendChild(eventItem);
+      });
+    }
+
+    function handleTelemetry(telemetry) {
+      if (!telemetry || typeof telemetry !== "object") {
+        console.warn("Received invalid telemetry event:", telemetry);
+        return;
+      }
+
+      const vehicleId = telemetry.vehicleId || "UNKNOWN-VEHICLE";
+
+      latestTelemetryByVehicle.set(vehicleId, {
+        ...telemetry,
+        vehicleId
+      });
+
+      recentEvents.unshift({
+        ...telemetry,
+        vehicleId
+      });
+
+      if (recentEvents.length > MAX_RECENT_EVENTS) {
+        recentEvents.pop();
+      }
+
+      totalEvents += 1;
+
+      renderStats(telemetry);
+      renderTable();
+      renderFeed();
+    }
+
+    socket.on("connect", () => {
+      console.log("Socket connected:", socket.id);
+      setConnectionStatus("connected");
+
+      // Optional server room event if you use it later:
+      // socket.emit("join-fleet", "YOUR-FLEET-ID");
+    });
+
+    socket.on("disconnect", (reason) => {
+      console.warn("Socket disconnected:", reason);
+      setConnectionStatus("disconnected", `Disconnected: ${reason}`);
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error("Socket connection error:", error.message);
+      setConnectionStatus("disconnected", "Unable to connect to Socket.IO server");
+    });
+
+    socket.io.on("reconnect_attempt", () => {
+      setConnectionStatus("connecting", "Trying to reconnect");
+    });
+
+    socket.on("telemetry:update", handleTelemetry);
+
+    vehicleSearch.addEventListener("input", (event) => {
+      currentSearch = event.target.value;
+      renderTable();
+    });
+
+    clearFeedButton.addEventListener("click", () => {
+      recentEvents.length = 0;
+      renderFeed();
+    });
+
+    setConnectionStatus("connecting");
+    renderStats();
+    renderTable();
+    renderFeed();
+  </script>
+</body>
+</html>
