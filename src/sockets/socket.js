@@ -1,13 +1,21 @@
 const { Server } = require("socket.io");
+
 const {
   subscribeTelemetry,
+  subscribeAlerts,
   attachRedisAdapter
 } = require("../services/pubsub.service");
+
+const {
+  encodeTelemetry
+} = require("../services/binary-telemetry.service");
 
 function setupSocket(httpServer) {
   const io = new Server(httpServer, {
     cors: {
-      origin: "*"
+      origin: "http://localhost:5173",
+      methods: ["GET", "POST"],
+      credentials: true
     },
     transports: ["websocket", "polling"]
   });
@@ -15,21 +23,37 @@ function setupSocket(httpServer) {
   attachRedisAdapter(io);
 
   io.on("connection", (socket) => {
-    console.log(`Client connected: ${socket.id}`);
+    console.log(`✅ Frontend Socket.IO client connected: ${socket.id}`);
 
-    socket.on("join-fleet", (fleetId) => {
-      socket.join(`fleet:${fleetId}`);
-    });
-
-    socket.on("disconnect", () => {
-      console.log(`Client disconnected: ${socket.id}`);
+    socket.on("disconnect", (reason) => {
+      console.log(`❌ Socket.IO client disconnected: ${socket.id} | ${reason}`);
     });
   });
 
   subscribeTelemetry((telemetry) => {
-  console.log("Broadcasting telemetry:", telemetry);
-  io.emit("telemetry:update", telemetry);
-});
+    console.log(
+      `📡 Redis telemetry received for ${telemetry.vehicleId}. Broadcasting to ${io.engine.clientsCount} client(s).`
+    );
+
+    const binaryPayload = encodeTelemetry(telemetry);
+
+    io.emit("telemetry:binary", {
+      vehicleId: telemetry.vehicleId,
+      payload: binaryPayload
+    });
+
+    // Temporary JSON event for easy debugging.
+    io.emit("telemetry:update", telemetry);
+  });
+
+  subscribeAlerts((alert) => {
+    console.log(
+      `🚨 Geofence alert for ${alert.vehicleId}: ${alert.alertType}`
+    );
+
+    io.emit("geofence:alert", alert);
+  });
+
   return io;
 }
 

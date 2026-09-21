@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "test:handles": "jest --runInBand --detectOpenHandles"
   },
   "repository": {
     "type": "git",
@@ -22,6 +23,7 @@
   "homepage": "https://github.com/P10082005/Fleet-Dash#readme",
   "dependencies": {
     "@socket.io/redis-adapter": "^8.3.0",
+    "@turf/turf": "^7.4.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
@@ -32,7 +34,7 @@
     "uuid": "^14.0.2"
   },
   "devDependencies": {
-    "jest": "^30.4.2",
+    "jest": "^30.5.1",
     "nodemon": "^3.1.14",
     "supertest": "^7.2.2"
   }

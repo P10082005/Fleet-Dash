@@ -8,26 +8,19 @@ const telemetryPointSchema = new mongoose.Schema(
     },
     latitude: {
       type: Number,
-      required: true,
-      min: -90,
-      max: 90
+      required: true
     },
     longitude: {
       type: Number,
-      required: true,
-      min: -180,
-      max: 180
+      required: true
     },
     speed: {
       type: Number,
-      default: 0,
-      min: 0
+      required: true
     },
     heading: {
       type: Number,
-      default: 0,
-      min: 0,
-      max: 360
+      required: true
     }
   },
   {
@@ -40,7 +33,7 @@ const telemetryBucketSchema = new mongoose.Schema(
     vehicleId: {
       type: String,
       required: true,
-      trim: true
+      index: true
     },
     bucketStart: {
       type: Date,
@@ -50,13 +43,13 @@ const telemetryBucketSchema = new mongoose.Schema(
       type: Date,
       required: true
     },
-    points: {
-      type: [telemetryPointSchema],
-      default: []
-    },
     pointCount: {
       type: Number,
       default: 0
+    },
+    points: {
+      type: [telemetryPointSchema],
+      default: []
     }
   },
   {
@@ -67,7 +60,7 @@ const telemetryBucketSchema = new mongoose.Schema(
 telemetryBucketSchema.index(
   {
     vehicleId: 1,
-    bucketStart: 1
+    bucketStart: -1
   },
   {
     unique: true
