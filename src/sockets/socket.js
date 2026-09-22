@@ -14,8 +14,7 @@ function setupSocket(httpServer) {
   const io = new Server(httpServer, {
     cors: {
       origin: "http://localhost:5173",
-      methods: ["GET", "POST"],
-      credentials: true
+      methods: ["GET", "POST"]
     },
     transports: ["websocket", "polling"]
   });
@@ -42,7 +41,6 @@ function setupSocket(httpServer) {
       payload: binaryPayload
     });
 
-    // Temporary JSON event for easy debugging.
     io.emit("telemetry:update", telemetry);
   });
 
